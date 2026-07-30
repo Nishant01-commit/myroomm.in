@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>myroom.in — Book Stays in Deoghar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Razorpay SDK (only used when paying) -->
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          parchment:'#FBF6E8', stone:'#EFE6D2', ink:'#1E2A28',
+          marigold:'#E8A33D', marigolddeep:'#C9852A',
+          sindoor:'#A6303A', sindoordeep:'#832531',
+          leaf:'#4C6B4F', leafdeep:'#374F3A',
+        },
+        fontFamily: { display:['Fraunces','serif'], body:['Inter','sans-serif'] },
+      },
+    },
+  }
+</script>
+<style>
+  *{scrollbar-width:thin}
+  ::-webkit-scrollbar{height:6px;width:6px}
+  ::-webkit-scrollbar-thumb{background:#C9852A55;border-radius:10px}
+  .gallery{scroll-snap-type:x mandatory}
+  .gallery>div{scroll-snap-align:start}
+  .garland{height:22px;background-image:radial-gradient(circle at 10px 0,transparent 9px,#FBF6E8 9.5px),radial-gradient(circle at 10px 0,#E8A33D 9px,transparent 9.5px);background-size:20px 20px;background-position:0 -10px;background-repeat:repeat-x}
+  .card-hover{transition:transform .25s ease,box-shadow .25s ease}
+  .card-hover:hover{transform:translateY(-6px);box-shadow:0 20px 40px -15px rgba(30,42,40,.25)}
+  .fade-in{animation:fadeIn .35s ease both}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .modal-backdrop{background:rgba(30,42,40,.55);backdrop-filter:blur(3px)}
+  .tabular{font-variant-numeric:tabular-nums}
+  .spin{animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:999;transition:opacity .4s ease}
+</style>
+</head>
+<body class="bg-parchment text-ink font-body antialiased">
+
+<!-- ═══ TOAST NOTIFICATION ═══ -->
+<div id="toast" class="toast hidden px-5 py-3 rounded-xl shadow-lg text-sm font-medium text-white"></div>
+
+<!-- ═══ NAVBAR ═══ -->
+<header class="sticky top-0 z-40 bg-parchment/90 backdrop-blur border-b border-ink/10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <a href="#" class="flex items-center gap-2">
+      <svg width="34" height="34" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" fill="#A6303A"/><path d="M20 8L24 17L33 17L26 23L28 32L20 27L12 32L14 23L7 17L16 17Z" fill="#E8A33D"/></svg>
+      <span class="font-display font-semibold text-xl tracking-tight">myroom<span class="text-sindoor">.in</span></span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-ink/70">
+      <a href="#stays" class="hover:text-ink transition">Stays in Deoghar</a>
+      <a href="#" class="hover:text-ink transition">List Your Property</a>
+      <a href="#contactModal" id="helpLink" class="hover:text-ink transition">Help</a>
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <!-- Shown when logged OUT -->
+      <button id="navLoginBtn" class="bg-ink text-parchment px-4 py-2 rounded-full text-sm font-semibold hover:bg-leafdeep transition">
+        Login / Signup
+      </button>
+      <!-- Shown when logged IN -->
+      <div id="navUserArea" class="hidden flex items-center gap-2">
+        <span id="navUserName" class="text-sm font-medium hidden sm:block"></span>
+        <button id="navDashboardBtn" class="bg-marigold text-ink px-4 py-2 rounded-full text-sm font-semibold hover:bg-marigolddeep transition">Dashboard</button>
+        <button id="navLogoutBtn" class="text-sm text-ink/50 hover:text-sindoor transition">Logout</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ HERO ═══ -->
+<section class="relative overflow-hidden">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-16 md:pt-20 md:pb-24 grid md:grid-cols-2 gap-10 items-center">
+    <div>
+      <span class="inline-block text-xs font-semibold tracking-widest uppercase text-sindoor bg-sindoor/10 px-3 py-1 rounded-full">Baidyanath Dham · Jharkhand</span>
+      <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.05] mt-4">
+        Rest easy on your<br class="hidden sm:block"> way to <span class="text-sindoor">Baba Dham.</span>
+      </h1>
+      <p class="mt-5 text-ink/70 text-lg max-w-md">Handpicked rooms near the temple, the tower, and the hills — booked in a minute, ready before you arrive.</p>
+      <div class="mt-6 flex items-center gap-4 text-sm text-ink/60">
+        <span>★ 4.6 avg rating</span>
+        <span class="w-1 h-1 rounded-full bg-ink/30"></span>
+        <span id="heroCount">Loading rooms…</span>
+      </div>
+    </div>
+    <div class="hidden md:block">
+      <div class="aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl rotate-1">
+        <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=60" class="w-full h-full object-cover" alt="Deoghar stay" />
+      </div>
+    </div>
+  </div>
+  <div class="garland"></div>
+</section>
+
+<!-- ═══ FILTERS ═══ -->
+<section id="stays" class="bg-stone border-y border-ink/10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1.5">Near Landmark</label>
+        <select id="filterLandmark" class="w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-marigold">
+          <option value="">All Landmarks</option>
+          <option>Baba Baidyanath Temple</option>
+          <option>Tower Chowk</option>
+          <option>AIIMS Deoghar</option>
+          <option>Trikut Pahar</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1.5">Stay Type</label>
+        <select id="filterCategory" class="w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-marigold">
+          <option value="">All</option>
+          <option>Couple</option>
+          <option>Family</option>
+          <option>Single</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1.5">Area / Locality</label>
+        <select id="filterArea" class="w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-marigold">
+          <option value="">All Areas</option>
+          <option>Castairs Town</option>
+          <option>Bilandasi</option>
+          <option>Jasidih</option>
+          <option>VIP Chowk</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold uppercase tracking-wide text-ink/50 mb-1.5">Sort By</label>
+        <select id="sortBy" class="w-full rounded-xl border border-ink/15 bg-white px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-marigold">
+          <option value="availability">Available First</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="rating">Rating: Highest First</option>
+          <option value="newest">Newest Rooms</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ROOM GRID ═══ -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+  <div class="flex items-center justify-between mb-6">
+    <h2 class="font-display text-2xl font-semibold">Stays in Deoghar</h2>
+    <span id="resultCount" class="text-sm text-ink/50"></span>
+  </div>
+  <!-- Loading skeleton -->
+  <div id="loadingGrid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="bg-white rounded-2xl overflow-hidden border border-ink/10 animate-pulse"><div class="h-48 bg-stone"></div><div class="p-4 space-y-3"><div class="h-4 bg-stone rounded w-3/4"></div><div class="h-3 bg-stone rounded w-1/2"></div><div class="h-8 bg-stone rounded mt-4"></div></div></div>
+    <div class="bg-white rounded-2xl overflow-hidden border border-ink/10 animate-pulse"><div class="h-48 bg-stone"></div><div class="p-4 space-y-3"><div class="h-4 bg-stone rounded w-3/4"></div><div class="h-3 bg-stone rounded w-1/2"></div><div class="h-8 bg-stone rounded mt-4"></div></div></div>
+    <div class="bg-white rounded-2xl overflow-hidden border border-ink/10 animate-pulse hidden lg:block"><div class="h-48 bg-stone"></div><div class="p-4 space-y-3"><div class="h-4 bg-stone rounded w-3/4"></div><div class="h-3 bg-stone rounded w-1/2"></div><div class="h-8 bg-stone rounded mt-4"></div></div></div>
+  </div>
+  <div id="roomGrid" class="hidden grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  <p id="emptyState" class="hidden text-center text-ink/50 py-16">No rooms match these filters — try widening your search.</p>
+  <p id="errorState" class="hidden text-center text-sindoor py-16 text-sm">⚠️ Could not connect to server. Make sure the backend is running on port 5000.</p>
+
+  <!-- Pagination -->
+  <div id="pagination" class="hidden mt-10 flex justify-center gap-2"></div>
+</main>
+
+<!-- ═══ BOOKING MODAL ═══ -->
+<div id="bookingModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+  <div class="bg-parchment rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 relative fade-in">
+    <button onclick="closeModal('bookingModal')" class="absolute top-4 right-4 text-ink/40 hover:text-ink text-xl">✕</button>
+    <h3 class="font-display text-2xl font-semibold mb-1">Book Your Stay</h3>
+    <p id="bookingRoomName" class="text-ink/60 text-sm mb-5"></p>
+
+    <div class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-ink/50 mb-1">Check-in</label>
+          <input type="date" id="bookCheckIn" class="w-full rounded-xl border border-ink/15 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-ink/50 mb-1">Check-out</label>
+          <input type="date" id="bookCheckOut" class="w-full rounded-xl border border-ink/15 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink/50 mb-1">Guests</label>
+        <input type="number" id="bookGuests" min="1" value="2" class="w-full rounded-xl border border-ink/15 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-ink/50 mb-1">Special Requests (optional)</label>
+        <textarea id="bookRequests" rows="2" class="w-full rounded-xl border border-ink/15 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold resize-none" placeholder="Late check-in, extra pillows…"></textarea>
+      </div>
+
+      <!-- Price preview -->
+      <div id="pricePreview" class="hidden bg-stone rounded-xl p-3 text-sm">
+        <div class="flex justify-between"><span class="text-ink/60">Nights</span><span id="previewNights" class="font-semibold"></span></div>
+        <div class="flex justify-between mt-1"><span class="text-ink/60">Rate/night</span><span id="previewRate" class="font-semibold"></span></div>
+        <div class="flex justify-between mt-2 pt-2 border-t border-ink/10 text-base font-bold"><span>Total</span><span id="previewTotal" class="text-sindoor"></span></div>
+      </div>
+
+      <button id="confirmBookingBtn" class="w-full bg-sindoor hover:bg-sindoordeep text-parchment font-semibold py-3 rounded-xl transition mt-1">
+        Confirm &amp; Proceed to Pay
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ DASHBOARD MODAL ═══ -->
+<div id="dashboardModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+  <div class="bg-parchment rounded-3xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6 sm:p-8 relative fade-in">
+    <button onclick="closeModal('dashboardModal')" class="absolute top-4 right-4 text-ink/40 hover:text-ink text-xl">✕</button>
+    <h3 class="font-display text-2xl font-semibold mb-5">My Dashboard</h3>
+    <div id="dashboardContent" class="text-sm text-ink/70">Loading…</div>
+  </div>
+</div>
+
+<!-- ═══ CONTACT MODAL ═══ -->
+<div id="contactModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+  <div class="bg-parchment rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 relative fade-in">
+    <button onclick="closeModal('contactModal')" class="absolute top-4 right-4 text-ink/40 hover:text-ink text-xl">✕</button>
+    <h3 class="font-display text-2xl font-semibold mb-1">Get in Touch</h3>
+    <p class="text-sm text-ink/60 mb-5">We reply within 24 hours.</p>
+    <form id="contactForm" class="space-y-3">
+      <input type="text" name="name" placeholder="Your name" required class="w-full rounded-xl border border-ink/15 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+      <input type="email" name="email" placeholder="Email address" required class="w-full rounded-xl border border-ink/15 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+      <input type="text" name="subject" placeholder="Subject" class="w-full rounded-xl border border-ink/15 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+      <textarea name="message" rows="3" placeholder="Your message…" required class="w-full rounded-xl border border-ink/15 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold resize-none"></textarea>
+      <button type="submit" class="w-full bg-sindoor hover:bg-sindoordeep text-parchment font-semibold py-2.5 rounded-xl transition">Send Message</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══ LOGIN/SIGNUP MODAL ═══ -->
+<div id="loginModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+  <div class="bg-parchment rounded-3xl shadow-2xl w-full max-w-md p-6 sm:p-8 relative fade-in">
+    <button onclick="closeModal('loginModal')" class="absolute top-4 right-4 text-ink/40 hover:text-ink text-xl">✕</button>
+
+    <!-- Step 1: Choose role -->
+    <div id="modalStep1">
+      <h3 class="font-display text-2xl font-semibold mb-1">Welcome to myroom.in</h3>
+      <p class="text-sm text-ink/60 mb-6">Who are you logging in as?</p>
+      <button data-role="customer" class="roleBtn w-full flex items-center gap-4 border border-ink/15 rounded-2xl p-4 mb-3 hover:border-marigold hover:bg-marigold/10 transition text-left">
+        <span class="text-2xl">🧳</span>
+        <span><span class="block font-semibold">User / Guest</span><span class="block text-xs text-ink/50">Book rooms &amp; manage your stays</span></span>
+      </button>
+      <button data-role="host" class="roleBtn w-full flex items-center gap-4 border border-ink/15 rounded-2xl p-4 hover:border-sindoor hover:bg-sindoor/10 transition text-left">
+        <span class="text-2xl">🏨</span>
+        <span><span class="block font-semibold">Hotel Provider</span><span class="block text-xs text-ink/50">List &amp; manage your property</span></span>
+      </button>
+    </div>
+
+    <!-- Step 2: Login / Signup form -->
+    <div id="modalStep2" class="hidden">
+      <button id="backToStep1" class="text-xs text-ink/50 hover:text-ink mb-3">← Back</button>
+      <h3 id="formTitle" class="font-display text-2xl font-semibold mb-3">Login</h3>
+
+      <div class="flex gap-2 mb-5">
+        <button data-tab="login" class="authTab flex-1 py-2 rounded-full text-sm font-semibold bg-ink text-parchment">Login</button>
+        <button data-tab="signup" class="authTab flex-1 py-2 rounded-full text-sm font-semibold bg-stone text-ink/60">Sign Up</button>
+      </div>
+
+      <div id="authError" class="hidden bg-sindoor/10 text-sindoor text-xs px-3 py-2 rounded-xl mb-3"></div>
+
+      <div class="space-y-3" id="authFields">
+        <input type="text"     id="authName"     placeholder="Full name"           class="hidden signupOnly w-full rounded-xl border border-ink/15 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+        <input type="tel"      id="authPhone"    placeholder="Mobile number"        class="hidden signupOnly w-full rounded-xl border border-ink/15 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+        <input type="email"    id="authEmail"    placeholder="Email address" required class="w-full rounded-xl border border-ink/15 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+        <input type="password" id="authPassword" placeholder="Password (min 6 chars)" required class="w-full rounded-xl border border-ink/15 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-marigold" />
+      </div>
+
+      <button id="authSubmitBtn" class="w-full bg-sindoor hover:bg-sindoordeep text-parchment font-semibold py-2.5 rounded-xl transition mt-4">
+        Continue
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="bg-ink text-parchment/90 mt-10">
+  <div class="garland" style="background-image:radial-gradient(circle at 10px 0,transparent 9px,#1E2A28 9.5px),radial-gradient(circle at 10px 0,#E8A33D 9px,transparent 9.5px);transform:scaleY(-1)"></div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid md:grid-cols-3 gap-10">
+    <div>
+      <h3 class="font-display text-lg font-semibold text-marigold mb-3">Help &amp; Support</h3>
+      <p class="text-sm text-parchment/70 mb-2">Have a question? We're here every day.</p>
+      <a href="tel:+919874564515" class="block text-sm hover:text-marigold transition">📞 +91 98745 64515</a>
+      <a href="mailto:editersworls13@gmail.com" class="block text-sm hover:text-marigold transition mt-1">✉️ editersworls13@gmail.com</a>
+      <button onclick="document.getElementById('contactModal').classList.remove('hidden')" class="mt-3 text-xs text-marigold hover:underline">Send us a message →</button>
+    </div>
+    <div class="md:text-center">
+      <h3 class="font-display text-lg font-semibold text-marigold mb-3">myroom.in</h3>
+      <p class="text-sm text-parchment/70 max-w-xs md:mx-auto">© <span id="year"></span> myroom.in, Deoghar's trusted booking platform. All rights reserved.</p>
+    </div>
+    <div class="md:text-right">
+      <h3 class="font-display text-lg font-semibold text-marigold mb-3">Follow Us</h3>
+      <div class="flex gap-3 md:justify-end">
+        <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-marigold hover:text-ink flex items-center justify-center transition" aria-label="Facebook">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.4h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12Z"/></svg>
+        </a>
+        <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-marigold hover:text-ink flex items-center justify-center transition" aria-label="Instagram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c2.7 0 3 0 4.1.1 1.1 0 1.8.2 2.5.5.7.3 1.2.6 1.8 1.2s.9 1.1 1.2 1.8c.3.7.5 1.4.5 2.5.1 1 .1 1.4.1 4.1s0 3-.1 4.1c0 1.1-.2 1.8-.5 2.5-.3.7-.6 1.2-1.2 1.8s-1.1.9-1.8 1.2c-.7.3-1.4.5-2.5.5-1 .1-1.4.1-4.1.1s-3 0-4.1-.1c-1.1 0-1.8-.2-2.5-.5-.7-.3-1.2-.6-1.8-1.2S3 18 2.7 17.3c-.3-.7-.5-1.4-.5-2.5C2.1 14 2 13.7 2 12s0-3 .1-4.1c0-1.1.2-1.8.5-2.5.3-.7.6-1.2 1.2-1.8S5 3 5.7 2.7c.7-.3 1.4-.5 2.5-.5C9.1 2 9.3 2 12 2Zm0 1.8c-2.6 0-3 0-4 .1-.9 0-1.4.2-1.7.3-.4.2-.7.3-1 .6-.3.3-.5.6-.6 1-.1.3-.3.8-.3 1.7-.1 1-.1 1.4-.1 4s0 3 .1 4c0 .9.2 1.4.3 1.7.2.4.3.7.6 1 .3.3.6.5 1 .6.3.1.8.3 1.7.3 1 .1 1.4.1 4 .1s3 0 4-.1c.9 0 1.4-.2 1.7-.3.4-.2.7-.3 1-.6.3-.3.5-.6.6-1 .1-.3.3-.8.3-1.7.1-1 .1-1.4.1-4s0-3-.1-4c0-.9-.2-1.4-.3-1.7-.2-.4-.3-.7-.6-1-.3-.3-.6-.5-1-.6-.3-.1-.8-.3-1.7-.3-1-.1-1.4-.1-4-.1Zm0 3.5a4.7 4.7 0 1 1 0 9.4 4.7 4.7 0 0 1 0-9.4Zm0 1.8a2.9 2.9 0 1 0 0 5.8 2.9 2.9 0 0 0 0-5.8Zm5-2a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0Z"/></svg>
+        </a>
+        <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-marigold hover:text-ink flex items-center justify-center transition" aria-label="Twitter/X">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 3H22l-7 8 8.2 10h-6.4l-5-6.5L5.9 21H2.8l7.5-8.6L2.4 3h6.5l4.6 6 5.4-6Zm-1.1 16.2h1.8L7.3 4.7H5.4l12.4 14.5Z"/></svg>
+        </a>
+        <a href="#" class="w-9 h-9 rounded-full bg-white/10 hover:bg-marigold hover:text-ink flex items-center justify-center transition" aria-label="LinkedIn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9h4v12H3V9Zm7 0h3.8v1.7h.1c.5-1 1.9-2 3.9-2 4.2 0 5 2.7 5 6.3V21h-4v-5.4c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9V21h-4V9Z"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══ FLOATING WHATSAPP ═══ -->
+<a href="https://wa.me/919872545474?text=Hi%20Admin%2C%20I%20have%20an%20enquiry%20regarding%20hotel%20booking%20on%20myroom.in"
+   target="_blank" rel="noopener" aria-label="Chat on WhatsApp"
+   class="fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full bg-[#25D366] shadow-xl flex items-center justify-center hover:scale-110 transition-transform">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2Zm0 1.8a8.2 8.2 0 0 1 6.9 12.6l-.2.4.6 2.4-2.5-.7-.4.2A8.2 8.2 0 1 1 12 3.8Zm-3.4 4.4c-.2 0-.5 0-.7.3-.2.3-.9.9-.9 2.1s.9 2.4 1 2.6c.1.2 1.8 2.9 4.5 3.9 2.2.9 2.6.7 3.1.7.5 0 1.6-.6 1.8-1.3.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.6-.4-.3-.1-1.6-.8-1.9-.9-.2-.1-.4-.1-.6.1-.2.3-.7.9-.9 1-.2.2-.3.2-.6.1-.3-.2-1.2-.5-2.3-1.5-.9-.8-1.4-1.8-1.6-2-.2-.3 0-.5.1-.6l.4-.5c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.6-1.6-.9-2.1-.2-.6-.4-.5-.6-.5h-.5Z"/></svg>
+</a>
+
+<!-- ═══ API CLIENT ═══ -->
+<!-- <script src="api.js"></script> -->
+
+<!-- ═══ APP LOGIC ═══ -->
+<script>
+/* ─────────────────────────────────────────────────────────────
+   UTILITIES
+───────────────────────────────────────────────────────────── */
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// Set today as min date for booking inputs
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('bookCheckIn').min  = today;
+document.getElementById('bookCheckOut').min = today;
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className   = `toast px-5 py-3 rounded-xl shadow-lg text-sm font-medium text-white ${type === 'error' ? 'bg-sindoor' : 'bg-leaf'}`;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 4000);
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+}
+
+// Close any modal on backdrop click
+document.querySelectorAll('[id$="Modal"]').forEach(modal => {
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.add('hidden'); });
+});
+
+/* ─────────────────────────────────────────────────────────────
+   AUTH STATE
+───────────────────────────────────────────────────────────── */
+function updateNavAuth(user) {
+  const loginBtn   = document.getElementById('navLoginBtn');
+  const userArea   = document.getElementById('navUserArea');
+  const userName   = document.getElementById('navUserName');
+
+  if (user) {
+    loginBtn.classList.add('hidden');
+    userArea.classList.remove('hidden');
+    userName.textContent = `Hi, ${user.name?.split(' ')[0]}!`;
+  } else {
+    loginBtn.classList.remove('hidden');
+    userArea.classList.add('hidden');
+  }
+}
+
+// Listen for auth changes from api.js
+window.addEventListener('mr:authChange', e => updateNavAuth(e.detail));
+window.addEventListener('mr:sessionExpired', () => {
+  showToast('Session expired. Please log in again.', 'error');
+  updateNavAuth(null);
+});
+
+// Init nav from saved session
+// updateNavAuth(api.currentUser());
+
+/* ─────────────────────────────────────────────────────────────
+   LOGIN / SIGNUP MODAL LOGIC
+───────────────────────────────────────────────────────────── */
+let selectedRole = 'customer';
+
+document.getElementById('navLoginBtn').addEventListener('click', () => openModal('loginModal'));
+
+document.querySelectorAll('.roleBtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selectedRole = btn.dataset.role;
+    document.getElementById('modalStep1').classList.add('hidden');
+    document.getElementById('modalStep2').classList.remove('hidden');
+    document.getElementById('formTitle').textContent =
+      selectedRole === 'host' ? 'Hotel Provider Login' : 'Guest Login';
+  });
+});
+
+document.getElementById('backToStep1').addEventListener('click', () => {
+  document.getElementById('modalStep2').classList.add('hidden');
+  document.getElementById('modalStep1').classList.remove('hidden');
+  document.getElementById('authError').classList.add('hidden');
+});
+
+document.querySelectorAll('.authTab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.authTab').forEach(t => {
+      t.classList.toggle('bg-ink',       t === tab);
+      t.classList.toggle('text-parchment', t === tab);
+      t.classList.toggle('bg-stone',     t !== tab);
+      t.classList.toggle('text-ink/60',  t !== tab);
+    });
+    const isSignup = tab.dataset.tab === 'signup';
+    document.querySelectorAll('.signupOnly').forEach(el => el.classList.toggle('hidden', !isSignup));
+    const roleLabel = selectedRole === 'host' ? 'Hotel Provider ' : 'Guest ';
+    document.getElementById('formTitle').textContent = roleLabel + (isSignup ? 'Sign Up' : 'Login');
+    document.getElementById('authError').classList.add('hidden');
+  });
+});
+
+document.getElementById('authSubmitBtn').addEventListener('click', async () => {
+  const isSignup = !document.querySelector('[data-tab="signup"]')?.classList.contains('bg-stone');
+  const email    = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl    = document.getElementById('authError');
+
+  errEl.classList.add('hidden');
+
+  const btn = document.getElementById('authSubmitBtn');
+  btn.textContent = 'Please wait…';
+  btn.disabled = true;
+
+  try {
+    if (isSignup) {
+      const name  = document.getElementById('authName').value.trim();
+      const phone = document.getElementById('authPhone').value.trim();
+      if (!name) throw new Error('Please enter your full name.');
+      await api.register(name, email, password, selectedRole, phone);
+      showToast('Account created! Welcome to myroom.in 🎉');
+    } else {
+      await api.login(email, password);
+      showToast('Logged in successfully!');
+    }
+    closeModal('loginModal');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.textContent = 'Continue';
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('navLogoutBtn').addEventListener('click', async () => {
+  await api.logout();
+  showToast('Logged out.');
+});
+
+/* ─────────────────────────────────────────────────────────────
+   ROOM GRID — Fetches from the backend API
+───────────────────────────────────────────────────────────── */
+let currentPage = 1;
+let activeLandmark = '';
+let currentRoomPrices = {}; // roomId → pricePerNight (for booking modal)
+
+async function loadRooms(page = 1) {
+  currentPage = page;
+  const filters = {
+    landmark: document.getElementById('filterLandmark').value,
+    roomType: document.getElementById('filterCategory').value,
+    area:     document.getElementById('filterArea').value,
+    sort:     document.getElementById('sortBy').value,
+    page,
+    limit: 9,
+  };
+  activeLandmark = filters.landmark;
+
+  document.getElementById('loadingGrid').classList.remove('hidden');
+  document.getElementById('roomGrid').classList.add('hidden');
+  document.getElementById('emptyState').classList.add('hidden');
+  document.getElementById('errorState').classList.add('hidden');
+  document.getElementById('pagination').classList.add('hidden');
+
+  try {
+    const result = await api.getRooms(filters);
+    document.getElementById('loadingGrid').classList.add('hidden');
+
+    document.getElementById('heroCount').textContent =
+      `${result.total} stay${result.total === 1 ? '' : 's'} in Deoghar`;
+    document.getElementById('resultCount').textContent =
+      `${result.total} result${result.total === 1 ? '' : 's'}`;
+
+    if (result.data.length === 0) {
+      document.getElementById('emptyState').classList.remove('hidden');
+      return;
+    }
+
+    // Cache prices for booking modal
+    result.data.forEach(r => { currentRoomPrices[r._id] = r.pricePerNight; });
+
+    const grid = document.getElementById('roomGrid');
+    grid.innerHTML = result.data.map(r => renderCard(r)).join('');
+    grid.classList.remove('hidden');
+
+    // Pagination
+    if (result.pages > 1) renderPagination(result.pages, result.page);
+
+  } catch (err) {
+    document.getElementById('loadingGrid').classList.add('hidden');
+    document.getElementById('errorState').classList.remove('hidden');
+    console.error('Room load error:', err);
+  }
+}
+
+function renderCard(room) {
+  const gallery = (room.images || []).length > 0
+    ? room.images.map(img => {
+        const src = img.startsWith('http') ? img : `/uploads/${img}`;
+        return `<div class="min-w-full snap-start"><img src="${src}" class="w-full h-48 object-cover" loading="lazy" alt="${room.name}" onerror="this.src='https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=800&q=60'" /></div>`;
+      }).join('')
+    : `<div class="min-w-full snap-start"><img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=60" class="w-full h-48 object-cover" loading="lazy" alt="${room.name}" /></div>`;
+
+  const availBadge = room.isAvailable
+    ? `<span class="inline-flex items-center gap-1 bg-leaf/15 text-leafdeep text-xs font-semibold px-2.5 py-1 rounded-full">● Available</span>`
+    : `<span class="inline-flex items-center gap-1 bg-ink/10 text-ink/50 text-xs font-semibold px-2.5 py-1 rounded-full">● Booked</span>`;
+
+  const catBadge = `<span class="text-xs font-semibold px-2.5 py-1 rounded-full ${room.roomType === 'Couple' ? 'bg-sindoor/10 text-sindoor' : 'bg-marigold/20 text-marigolddeep'}">${room.roomType}</span>`;
+
+  let distText = '';
+  if (activeLandmark && room.landmarkDistances) {
+    const ld = room.landmarkDistances.find(d => d.landmark === activeLandmark);
+    if (ld) distText = `📍 ${ld.distanceText} from ${activeLandmark}`;
+  } else if (room.nearestLandmark) {
+    const ld = room.landmarkDistances?.find(d => d.landmark === room.nearestLandmark);
+    if (ld) distText = `📍 ${ld.distanceText} from ${room.nearestLandmark}`;
+  }
+
+  const hostName = room.host?.name ? `by ${room.host.name}` : '';
+
+  return `
+  <article class="fade-in card-hover bg-white rounded-2xl overflow-hidden border border-ink/10 shadow-sm">
+    <div class="relative">
+      <div class="gallery flex overflow-x-auto">${gallery}</div>
+      <div class="absolute top-3 left-3">${availBadge}</div>
+      <div class="absolute top-3 right-3 bg-ink/80 text-parchment text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur">${(room.rating || 0).toFixed(1)} ★ (${room.reviewCount || 0})</div>
+    </div>
+    <div class="p-4">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <h3 class="font-display font-semibold text-lg leading-tight">${room.name}</h3>
+          <p class="text-xs text-ink/50">${room.area}, Deoghar ${hostName}</p>
+        </div>
+        ${catBadge}
+      </div>
+      ${distText ? `<p class="text-sm text-ink/70 mt-2">${distText}</p>` : ''}
+      <div class="flex items-end justify-between mt-4 pt-4 border-t border-ink/10">
+        <div>
+          <p class="font-display text-xl font-semibold tabular">₹${(room.pricePerNight||0).toLocaleString('en-IN')}<span class="text-xs font-normal text-ink/50">/night</span></p>
+          <p class="text-xs text-ink/50">${room.capacity} Guest${room.capacity > 1 ? 's' : ''}</p>
+        </div>
+        <button
+          class="bg-sindoor hover:bg-sindoordeep text-parchment text-sm font-semibold px-4 py-2 rounded-xl transition disabled:bg-ink/20 disabled:cursor-not-allowed"
+          ${room.isAvailable ? `onclick="openBookingModal('${room._id}','${room.name.replace(/'/g,"\\'")}',${room.pricePerNight})"` : 'disabled'}
+        >
+          ${room.isAvailable ? 'Book Now' : 'Unavailable'}
+        </button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function renderPagination(totalPages, currentPg) {
+  const pg = document.getElementById('pagination');
+  let html = '';
+  for (let i = 1; i <= totalPages; i++) {
+    html += `<button onclick="loadRooms(${i})"
+      class="w-9 h-9 rounded-full text-sm font-semibold transition ${i === currentPg ? 'bg-ink text-parchment' : 'bg-stone hover:bg-marigold/30'}">${i}</button>`;
+  }
+  pg.innerHTML = html;
+  pg.classList.remove('hidden');
+  pg.className = 'mt-10 flex justify-center gap-2';
+}
+
+['filterLandmark','filterCategory','filterArea','sortBy'].forEach(id =>
+  document.getElementById(id).addEventListener('change', () => loadRooms(1))
+);
+
+/* ─────────────────────────────────────────────────────────────
+   BOOKING MODAL
+───────────────────────────────────────────────────────────── */
+let currentBookingRoomId   = null;
+let currentBookingRoomPrice = 0;
+
+function openBookingModal(roomId, roomName, pricePerNight) {
+  if (!api.isLoggedIn()) {
+    showToast('Please log in first to book a room.', 'error');
+    openModal('loginModal');
+    return;
+  }
+  if (api.userRole() !== 'customer') {
+    showToast('Only guests can make bookings. Please log in as a customer.', 'error');
+    return;
+  }
+  currentBookingRoomId    = roomId;
+  currentBookingRoomPrice = pricePerNight;
+  document.getElementById('bookingRoomName').textContent = roomName;
+  document.getElementById('pricePreview').classList.add('hidden');
+  openModal('bookingModal');
+}
+
+// Live price preview as dates change
+function updatePricePreview() {
+  const ci = document.getElementById('bookCheckIn').value;
+  const co = document.getElementById('bookCheckOut').value;
+  if (!ci || !co) return;
+  const nights = Math.max(1, Math.ceil((new Date(co) - new Date(ci)) / 86400000));
+  if (nights < 1) return;
+  const total = nights * currentBookingRoomPrice;
+  document.getElementById('previewNights').textContent = `${nights} night${nights > 1 ? 's' : ''}`;
+  document.getElementById('previewRate').textContent   = `₹${currentBookingRoomPrice.toLocaleString('en-IN')}`;
+  document.getElementById('previewTotal').textContent  = `₹${total.toLocaleString('en-IN')}`;
+  document.getElementById('pricePreview').classList.remove('hidden');
+}
+document.getElementById('bookCheckIn').addEventListener('change', updatePricePreview);
+document.getElementById('bookCheckOut').addEventListener('change', updatePricePreview);
+
+document.getElementById('confirmBookingBtn').addEventListener('click', async () => {
+  const checkIn        = document.getElementById('bookCheckIn').value;
+  const checkOut       = document.getElementById('bookCheckOut').value;
+  const guests         = document.getElementById('bookGuests').value;
+  const specialRequests = document.getElementById('bookRequests').value;
+
+  if (!checkIn || !checkOut) { showToast('Please select check-in and check-out dates.', 'error'); return; }
+
+  const btn = document.getElementById('confirmBookingBtn');
+  btn.textContent = 'Creating booking…';
+  btn.disabled = true;
+
+  try {
+    const booking = await api.createBooking(currentBookingRoomId, checkIn, checkOut, guests, specialRequests);
+    closeModal('bookingModal');
+    showToast('Booking created! Proceeding to payment…');
+
+    // ── Initiate Payment ───────────────────────────────────
+    setTimeout(async () => {
+      try {
+        const session = await api.createCheckoutSession(booking._id);
+
+        if (session.gateway === 'razorpay') {
+          api.openRazorpay(
+            session,
+            async ({ bookingId, orderId, paymentId, signature }) => {
+              try {
+                await api.verifyPayment(bookingId, orderId, paymentId, signature);
+                showToast('Payment successful! Booking confirmed 🎉');
+                loadRooms(currentPage);
+              } catch (e) {
+                showToast('Payment verification failed. Contact support.', 'error');
+              }
+            },
+            (err) => showToast(err.message, 'error')
+          );
+        } else if (session.gateway === 'stripe' && session.url) {
+          window.location.href = session.url;
+        }
+      } catch (e) {
+        showToast('Payment initialization failed. Your booking is saved — you can pay later from your dashboard.', 'error');
+      }
+    }, 600);
+
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.textContent = 'Confirm & Proceed to Pay';
+    btn.disabled = false;
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────
+   DASHBOARD MODAL
+───────────────────────────────────────────────────────────── */
+document.getElementById('navDashboardBtn').addEventListener('click', async () => {
+  openModal('dashboardModal');
+  const content = document.getElementById('dashboardContent');
+  content.innerHTML = '<p class="text-center py-8 text-ink/50">Loading your dashboard…</p>';
+  try {
+    const data = await api.getDashboard();
+    const role = api.userRole();
+
+    if (role === 'customer') {
+      const upcoming = data.upcoming || [];
+      const past     = data.past || [];
+      content.innerHTML = `
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-stone rounded-xl p-4 text-center">
+            <div class="font-display text-2xl font-semibold">${data.bookingCount || 0}</div>
+            <div class="text-xs text-ink/50 mt-1">Total Bookings</div>
+          </div>
+          <div class="bg-stone rounded-xl p-4 text-center">
+            <div class="font-display text-2xl font-semibold text-sindoor">₹${(data.totalSpent||0).toLocaleString('en-IN')}</div>
+            <div class="text-xs text-ink/50 mt-1">Total Spent</div>
+          </div>
+        </div>
+        <h4 class="font-semibold mb-3">Upcoming Stays (${upcoming.length})</h4>
+        ${upcoming.length === 0 ? '<p class="text-ink/40 text-xs mb-4">No upcoming bookings.</p>' :
+          upcoming.map(b => `<div class="bg-stone rounded-xl p-3 mb-2 flex justify-between items-center">
+            <div><div class="font-medium">${b.room?.name || 'Room'}</div><div class="text-xs text-ink/50">${new Date(b.checkIn).toDateString()} → ${new Date(b.checkOut).toDateString()}</div></div>
+            <div class="text-right"><div class="font-semibold text-sindoor">₹${(b.totalPrice||0).toLocaleString('en-IN')}</div><div class="text-xs px-2 py-0.5 rounded-full ${b.status==='confirmed'?'bg-leaf/15 text-leafdeep':'bg-marigold/20 text-marigolddeep'}">${b.status}</div></div>
+          </div>`).join('')}
+        <h4 class="font-semibold mb-3 mt-4">Past Stays (${past.length})</h4>
+        ${past.length === 0 ? '<p class="text-ink/40 text-xs">No past bookings yet.</p>' :
+          past.slice(0,5).map(b => `<div class="bg-stone rounded-xl p-3 mb-2 flex justify-between items-center opacity-70">
+            <div><div class="font-medium">${b.room?.name || 'Room'}</div><div class="text-xs text-ink/50">${new Date(b.checkIn).toDateString()}</div></div>
+            <div class="font-semibold">₹${(b.totalPrice||0).toLocaleString('en-IN')}</div>
+          </div>`).join('')}`;
+
+    } else if (role === 'host') {
+      const rooms = data.rooms || [];
+      content.innerHTML = `
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-stone rounded-xl p-4 text-center">
+            <div class="font-display text-2xl font-semibold text-leaf">₹${(data.totalRevenue||0).toLocaleString('en-IN')}</div>
+            <div class="text-xs text-ink/50 mt-1">Total Revenue</div>
+          </div>
+          <div class="bg-stone rounded-xl p-4 text-center">
+            <div class="font-display text-2xl font-semibold">${data.totalBookings || 0}</div>
+            <div class="text-xs text-ink/50 mt-1">Total Bookings</div>
+          </div>
+        </div>
+        <h4 class="font-semibold mb-3">Your Listings (${rooms.length})</h4>
+        ${rooms.map(r => `<div class="bg-stone rounded-xl p-3 mb-2 flex justify-between items-center">
+          <div><div class="font-medium">${r.name}</div><div class="text-xs text-ink/50">${r.area} · ₹${(r.pricePerNight||0).toLocaleString('en-IN')}/night</div></div>
+          <span class="${r.isAvailable?'text-leafdeep':'text-ink/40'} text-xs font-semibold">${r.isAvailable?'✓ Available':'Paused'}</span>
+        </div>`).join('')}`;
+    }
+  } catch (err) {
+    content.innerHTML = `<p class="text-center py-8 text-sindoor">Failed to load: ${err.message}</p>`;
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────
+   CONTACT FORM
+───────────────────────────────────────────────────────────── */
+document.getElementById('helpLink').addEventListener('click', e => {
+  e.preventDefault(); openModal('contactModal');
+});
+
+document.getElementById('contactForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const btn  = form.querySelector('button[type="submit"]');
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+  try {
+    const data = Object.fromEntries(new FormData(form));
+    await api.sendContact(data);
+    showToast('Message sent! We will reply within 24 hours.');
+    form.reset();
+    closeModal('contactModal');
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    btn.textContent = 'Send Message';
+    btn.disabled = false;
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────
+   BOOT — Load rooms on page load
+───────────────────────────────────────────────────────────── */
+loadRooms();
+</script>
+</body>
+</html>

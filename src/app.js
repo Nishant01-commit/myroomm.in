@@ -30,6 +30,8 @@ app.use(helmet());
 // ── CORS ───────────────────────────────────────────────────────
 app.use(cors({
   origin: [
+    'https://www.myroomm.in',
+    'https://myroomm.in',
     process.env.FRONTEND_URL || 'http://localhost:3000',
     'http://localhost:5173',   // Vite dev server
   ],
@@ -65,19 +67,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.get('/api/v1/health', (req, res) => {
   res.json({
     success: true,
-    message: 'myroomm.in API is operational',
+    message: 'myroom.in API is operational',
     version: '1.0.0',
     environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
   });
-});
-
-app.get('/', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Welcome to MyRoom API',
-        docs: '/api/v1/health'
-    });
 });
 
 // ── Mount routes ───────────────────────────────────────────────
@@ -93,4 +87,3 @@ app.use(notFound);
 app.use(errorHandler);
 
 module.exports = app;
-

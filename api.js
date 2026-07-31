@@ -9,7 +9,7 @@
  * ╚═══════════════════════════════════════════════════════════╝
  */
 
-const API_BASE = 'http://localhost:5000/api/v1'; // ← Change to your deployed URL in production
+const API_BASE = 'https://myroomm-backend-server.onrender.com/api/v1';
 
 class MyroomAPI {
   constructor(baseURL) {
